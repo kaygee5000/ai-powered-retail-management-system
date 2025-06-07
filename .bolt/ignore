@@ -1,0 +1,15 @@
+
+src/App.tsx
+src/index.css
+src/main.tsx
+src/vite-env.d.ts
+eslint.config.js
+index.html
+package-lock.json
+tailwind.config.js
+tsconfig.app.json
+tsconfig.json
+tsconfig.node.json
+postcss.config.js
+vite.config.ts
+supabase/migrations/*
