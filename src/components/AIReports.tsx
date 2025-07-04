@@ -7,8 +7,6 @@ import {
   CheckCircle, 
   AlertTriangle, 
   Clock,
-  TrendingUp,
-  TrendingDown,
   Package,
   DollarSign,
   FileText,
@@ -151,8 +149,8 @@ const AIReports: React.FC = () => {
     
     // Get recent sales data for location-specific suggestions
     const recentSales = sales.slice(0, 5);
-    const locationSales = selectedLocationId ? 
-      sales.filter(sale => sale.location_id === selectedLocationId).slice(0, 3) : [];
+    // const locationSales = selectedLocationId ?
+    //   sales.filter(sale => sale.location_id === selectedLocationId).slice(0, 3) : [];
 
     // Get low stock products for the selected location
     const lowStockItems = products.filter(product => 

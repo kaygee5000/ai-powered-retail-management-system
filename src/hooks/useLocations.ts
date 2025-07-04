@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { apiService } from '../services/apiService';
 
 interface Location {
@@ -31,22 +31,23 @@ export const useLocations = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchLocations = async (filters: LocationFilters = {}) => {
+  const fetchLocations = useCallback(async (filters: LocationFilters = {}) => {
     setLoading(true);
     setError(null);
     try {
       const { data, error: apiError } = await apiService.getLocations(filters);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       setLocations(data || []);
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       setError(err.message);
       setLocations([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // fetchLocations itself doesn't depend on other hook state/props here
 
-  const addLocation = async (locationData: {
+  const addLocation = useCallback(async (locationData: {
     name: string;
     address: string;
     manager: string;
@@ -54,17 +55,17 @@ export const useLocations = () => {
   }) => {
     try {
       const { data, error: apiError } = await apiService.createLocation(locationData);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
-      // Refresh the locations list
       await fetchLocations();
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, [fetchLocations]);
 
-  const updateLocation = async (id: string, updates: Partial<{
+  const updateLocation = useCallback(async (id: string, updates: Partial<{
     name: string;
     address: string;
     manager: string;
@@ -72,42 +73,45 @@ export const useLocations = () => {
   }>) => {
     try {
       const { data, error: apiError } = await apiService.updateLocation(id, updates);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
-      // Refresh the locations list
       await fetchLocations();
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, [fetchLocations]);
 
-  const deleteLocation = async (id: string) => {
+  const deleteLocation = useCallback(async (id: string) => {
     try {
       const { data, error: apiError } = await apiService.deleteLocation(id);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
-      // Refresh the locations list
       await fetchLocations();
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, [fetchLocations]);
 
-  const getLocation = async (id: string) => {
+  const getLocation = useCallback(async (id: string) => {
+    // This function doesn't modify state or call fetchLocations,
+    // so its memoization is mainly for stable reference if passed as prop/dependency.
     try {
       const { data, error: apiError } = await apiService.getLocation(id);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchLocations();
-  }, []);
+  }, [fetchLocations]); // Now depends on memoized fetchLocations
 
   return {
     locations,

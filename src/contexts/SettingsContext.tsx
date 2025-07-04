@@ -1,27 +1,11 @@
-import React, { createContext, useContext, useEffect } from 'react';
-import { useSettings, UserSettings } from '../hooks/useSettings';
+import React, { useEffect } from 'react'; // Removed createContext
+import { useSettings } from '../hooks/useSettings';
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import { SettingsContext, SettingsContextType } from './settingsContextObject'; // Import from new file
 
-interface SettingsContextType {
-  settings: UserSettings;
-  loading: boolean;
-  saving: boolean;
-  error: string | null;
-  updateProfileData: (profileData: Partial<UserSettings['profile_data']>) => Promise<{ success: boolean; error: string | null }>;
-  updateNotificationPreferences: (preferences: Partial<UserSettings['notification_preferences']>) => Promise<{ success: boolean; error: string | null }>;
-  updateAISettings: (aiSettings: Partial<UserSettings['ai_settings']>) => Promise<{ success: boolean; error: string | null }>;
-  updateSecuritySettings: (securitySettings: Partial<UserSettings['security_settings']>) => Promise<{ success: boolean; error: string | null }>;
-  updateAppearanceSettings: (appearanceSettings: Partial<UserSettings['appearance_settings']>) => Promise<{ success: boolean; error: string | null }>;
-}
-
-const SettingsContext = createContext<SettingsContextType | undefined>(undefined);
-
-export const useSettingsContext = () => {
-  const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error('useSettingsContext must be used within a SettingsProvider');
-  }
-  return context;
-};
+// SettingsContextType is now imported
+// SettingsContext is now imported
+// useSettingsContext hook has been moved to src/contexts/useSettingsContextHook.ts
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const settingsHook = useSettings();

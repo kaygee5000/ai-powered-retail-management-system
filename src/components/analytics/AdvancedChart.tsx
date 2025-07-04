@@ -16,11 +16,12 @@ import {
   Cell,
   Legend
 } from 'recharts';
+import { TooltipProps, Payload } from 'recharts'; // Import TooltipProps and Payload
 import { useCurrency } from '../../hooks/useCurrency';
 
 interface AdvancedChartProps {
   type: 'line' | 'area' | 'bar' | 'pie';
-  data: any[];
+  data: Array<Record<string, string | number>>;
   title: string;
   height?: number;
   colors?: string[];
@@ -45,19 +46,20 @@ const AdvancedChart: React.FC<AdvancedChartProps> = ({
 }) => {
   const { format } = useCurrency();
 
-  const customTooltip = ({ active, payload, label }: any) => {
+  const customTooltip = ({ active, payload, label }: TooltipProps<number, string>) => {
     if (active && payload && payload.length) {
       return (
         <div className="bg-white p-3 border border-gray-200 rounded-lg shadow-lg">
           <p className="font-medium text-gray-900 mb-1">{label}</p>
-          {payload.map((entry: any, index: number) => (
-            <p key={index} className="text-sm" style={{ color: entry.color }}>
-              {`${entry.name}: ${
-                typeof entry.value === 'number' && entry.name.toLowerCase().includes('revenue') || 
-                entry.name.toLowerCase().includes('sales') || 
-                entry.name.toLowerCase().includes('value')
-                  ? format(entry.value)
-                  : entry.value
+          {payload.map((pItem: Payload<number, string>, index: number) => (
+            <p key={index} className="text-sm" style={{ color: pItem.color || pItem.payload?.fill || pItem.fill || colors[index % colors.length] }}>
+              {`${pItem.name}: ${
+                typeof pItem.value === 'number' &&
+                (String(pItem.name).toLowerCase().includes('revenue') ||
+                 String(pItem.name).toLowerCase().includes('sales') ||
+                 String(pItem.name).toLowerCase().includes('value'))
+                  ? format(pItem.value)
+                  : pItem.value
               }`}
             </p>
           ))}

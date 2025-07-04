@@ -5,7 +5,6 @@ import {
   CreditCard,
   User,
   MapPin,
-  Calendar,
   Plus,
   Edit,
   Trash2,
@@ -16,8 +15,8 @@ import {
   Clock,
   Receipt
 } from 'lucide-react';
-import { useSales } from '../hooks/useSales';
-import { useLocations } from '../hooks/useLocations';
+import { useSales, Sale } from '../hooks/useSales';
+import { useLocations, Location } from '../hooks/useLocations';
 import { useCurrency } from '../hooks/useCurrency';
 import { 
   calculateSalesTrend, 
@@ -40,9 +39,9 @@ interface SaleFormData {
 const SaleModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  sale?: any;
+  sale?: Sale | null;
   onSave: (data: SaleFormData) => Promise<void>;
-  locations: any[];
+  locations: Location[];
 }> = ({ isOpen, onClose, sale, onSave, locations }) => {
   const [formData, setFormData] = useState<SaleFormData>({
     timestamp: sale?.timestamp ? new Date(sale.timestamp).toISOString().slice(0, 16) : new Date().toISOString().slice(0, 16),
@@ -317,8 +316,8 @@ const DeleteConfirmModal: React.FC<{
 const Sales: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [editingSale, setEditingSale] = useState<any>(null);
-  const [deletingSale, setDeletingSale] = useState<any>(null);
+  const [editingSale, setEditingSale] = useState<Sale | null>(null);
+  const [deletingSale, setDeletingSale] = useState<Sale | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState('all');
 
@@ -374,12 +373,12 @@ const Sales: React.FC = () => {
     }
   };
 
-  const openEditModal = (sale: any) => {
+  const openEditModal = (sale: Sale) => {
     setEditingSale(sale);
     setModalOpen(true);
   };
 
-  const openDeleteModal = (sale: any) => {
+  const openDeleteModal = (sale: Sale) => {
     setDeletingSale(sale);
     setDeleteModalOpen(true);
   };

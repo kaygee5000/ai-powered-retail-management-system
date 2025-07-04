@@ -1,3 +1,5 @@
+import { ParsedReportData } from '../hooks/useReports'; // Import ParsedReportData
+
 export interface Database {
   public: {
     Tables: {
@@ -169,7 +171,7 @@ export interface Database {
           location_id: string;
           staff: string;
           raw_text: string;
-          parsed_data: any;
+          parsed_data: ParsedReportData | null;
           confidence: number;
           status: 'processed' | 'pending' | 'flagged';
           created_at: string;
@@ -182,7 +184,7 @@ export interface Database {
           location_id: string;
           staff: string;
           raw_text: string;
-          parsed_data?: any;
+          parsed_data?: ParsedReportData | null;
           confidence: number;
           status?: 'processed' | 'pending' | 'flagged';
           created_at?: string;
@@ -195,7 +197,7 @@ export interface Database {
           location_id?: string;
           staff?: string;
           raw_text?: string;
-          parsed_data?: any;
+          parsed_data?: ParsedReportData | null;
           confidence?: number;
           status?: 'processed' | 'pending' | 'flagged';
           created_at?: string;

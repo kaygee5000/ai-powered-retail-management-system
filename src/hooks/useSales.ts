@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { apiService } from '../services/apiService';
 
 interface Sale {
@@ -37,22 +37,23 @@ export const useSales = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSales = async (filters: SalesFilters = {}) => {
+  const fetchSales = useCallback(async (filters: SalesFilters = {}) => {
     setLoading(true);
     setError(null);
     try {
       const { data, error: apiError } = await apiService.getSales(filters);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       setSales(data || []);
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       setError(err.message);
       setSales([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const addSale = async (saleData: {
+  const addSale = useCallback(async (saleData: {
     timestamp: string;
     location_id: string;
     total: number;
@@ -62,17 +63,17 @@ export const useSales = () => {
   }) => {
     try {
       const { data, error: apiError } = await apiService.createSale(saleData);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
-      // Refresh the sales list
       await fetchSales();
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, [fetchSales]);
 
-  const updateSale = async (id: string, updates: Partial<{
+  const updateSale = useCallback(async (id: string, updates: Partial<{
     timestamp: string;
     location_id: string;
     total: number;
@@ -82,42 +83,43 @@ export const useSales = () => {
   }>) => {
     try {
       const { data, error: apiError } = await apiService.updateSale(id, updates);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
-      // Refresh the sales list
       await fetchSales();
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, [fetchSales]);
 
-  const deleteSale = async (id: string) => {
+  const deleteSale = useCallback(async (id: string) => {
     try {
       const { data, error: apiError } = await apiService.deleteSale(id);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
-      // Refresh the sales list
       await fetchSales();
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, [fetchSales]);
 
-  const getSale = async (id: string) => {
+  const getSale = useCallback(async (id: string) => {
     try {
       const { data, error: apiError } = await apiService.getSale(id);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchSales();
-  }, []);
+  }, [fetchSales]);
 
   return {
     sales,

@@ -45,7 +45,7 @@ const DebugSupabase: React.FC = () => {
     
     try {
       // Try to make a simple request to Supabase
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('user_settings')
         .select('count', { count: 'exact', head: true });
       
@@ -59,7 +59,8 @@ const DebugSupabase: React.FC = () => {
         message: prev.message + '\n✓ Successfully connected to Supabase database'
       }));
       
-    } catch (error: any) {
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e : new Error(String(e));
       setStatus(prev => ({ 
         ...prev, 
         connection: 'error',
@@ -72,7 +73,7 @@ const DebugSupabase: React.FC = () => {
     setStatus(prev => ({ ...prev, auth: 'checking' }));
     
     try {
-      const { data, error } = await supabase.auth.getSession();
+      const { data } = await supabase.auth.getSession(); // Removed unused 'error'
       
       setStatus(prev => ({ 
         ...prev, 
@@ -80,7 +81,8 @@ const DebugSupabase: React.FC = () => {
         message: prev.message + `\n✓ Auth working. User: ${data.session?.user?.email || 'Not logged in'}`
       }));
       
-    } catch (error: any) {
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e : new Error(String(e));
       setStatus(prev => ({ 
         ...prev, 
         auth: 'error',

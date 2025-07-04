@@ -28,7 +28,8 @@ const AuthLayout: React.FC = () => {
         if (error) throw error;
         setMessage('Check your email for the confirmation link!');
       }
-    } catch (error: any) {
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e : new Error(String(e));
       setError(error.message);
     } finally {
       setLoading(false);
@@ -48,7 +49,8 @@ const AuthLayout: React.FC = () => {
       const { error } = await resetPassword(email);
       if (error) throw error;
       setMessage('Password reset email sent! Check your inbox.');
-    } catch (error: any) {
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e : new Error(String(e));
       setError(error.message);
     } finally {
       setLoading(false);

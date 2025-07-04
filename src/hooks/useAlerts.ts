@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { apiService } from '../services/apiService';
 
 interface Alert {
@@ -35,20 +35,21 @@ export const useAlerts = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAlerts = async (filters: AlertFilters = {}) => {
+  const fetchAlerts = useCallback(async (filters: AlertFilters = {}) => {
     setLoading(true);
     setError(null);
     try {
       const { data, error: apiError } = await apiService.getAlerts(filters);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       setAlerts(data || []);
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       setError(err.message);
       setAlerts([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []); // Empty dependency array as it doesn't rely on component scope variables
 
   const addAlert = async (alertData: {
     type: 'low_stock' | 'high_return' | 'unusual_activity' | 'sales_spike' | 'system';
@@ -59,12 +60,13 @@ export const useAlerts = () => {
   }) => {
     try {
       const { data, error: apiError } = await apiService.createAlert(alertData);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
       // Refresh the alerts list
-      await fetchAlerts();
+      await fetchAlerts(); // fetchAlerts is memoized, so this is fine
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
   };
@@ -72,12 +74,13 @@ export const useAlerts = () => {
   const resolveAlert = async (id: string) => {
     try {
       const { data, error: apiError } = await apiService.resolveAlert(id);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
       // Refresh the alerts list
       await fetchAlerts();
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
   };
@@ -85,19 +88,20 @@ export const useAlerts = () => {
   const deleteAlert = async (id: string) => {
     try {
       const { data, error: apiError } = await apiService.deleteAlert(id);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
       // Refresh the alerts list
       await fetchAlerts();
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
   };
 
   useEffect(() => {
     fetchAlerts();
-  }, []);
+  }, [fetchAlerts]); // Added fetchAlerts to dependency array
 
   return {
     alerts,

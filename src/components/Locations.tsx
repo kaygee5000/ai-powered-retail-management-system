@@ -24,7 +24,7 @@ import { useLocations } from '../hooks/useLocations';
 import { useSales } from '../hooks/useSales';
 import { useAlerts } from '../hooks/useAlerts';
 import { useCurrency } from '../hooks/useCurrency';
-import { aiService, GeneratedLocationData } from '../services/aiService';
+import { aiService } from '../services/aiService'; // Removed GeneratedLocationData
 import { 
   calculateLocationSalesTrend, 
   calculateLocationAlertsTrend, 
@@ -39,10 +39,12 @@ interface LocationFormData {
   status: 'active' | 'inactive' | 'attention';
 }
 
+// Location type is already imported from '../hooks/useLocations' at the top of the file
+
 const LocationModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  location?: any;
+  location?: Location | null;
   onSave: (data: LocationFormData) => Promise<void>;
 }> = ({ isOpen, onClose, location, onSave }) => {
   const [formData, setFormData] = useState<LocationFormData>({
@@ -289,7 +291,7 @@ const LocationModal: React.FC<{
             </label>
             <select
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as Location['status'] })}
               className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
                 aiGenerating ? 'bg-gray-50' : ''
               }`}
@@ -401,10 +403,18 @@ const DeleteConfirmModal: React.FC<{
   );
 };
 
+// Define a more specific type for trend objects if possible, for now using any
+interface FormattedTrend {
+  value: string;
+  icon: 'up' | 'down' | 'stable';
+  color: string;
+  tooltip: string;
+}
+
 const LocationCard: React.FC<{ 
-  location: any;
-  salesTrend: any;
-  alertsTrend: any;
+  location: Location;
+  salesTrend: FormattedTrend | null;
+  alertsTrend: FormattedTrend | null;
   onEdit: () => void;
   onDelete: () => void;
 }> = ({ location, salesTrend, alertsTrend, onEdit, onDelete }) => {
@@ -535,8 +545,8 @@ const Locations: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState('All');
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [editingLocation, setEditingLocation] = useState<any>(null);
-  const [deletingLocation, setDeletingLocation] = useState<any>(null);
+  const [editingLocation, setEditingLocation] = useState<Location | null>(null);
+  const [deletingLocation, setDeletingLocation] = useState<Location | null>(null);
 
   const { locations, loading, addLocation, updateLocation, deleteLocation } = useLocations();
   const { sales } = useSales();
@@ -568,12 +578,12 @@ const Locations: React.FC = () => {
     }
   };
 
-  const openEditModal = (location: any) => {
+  const openEditModal = (location: Location) => {
     setEditingLocation(location);
     setModalOpen(true);
   };
 
-  const openDeleteModal = (location: any) => {
+  const openDeleteModal = (location: Location) => {
     setDeletingLocation(location);
     setDeleteModalOpen(true);
   };
@@ -584,7 +594,7 @@ const Locations: React.FC = () => {
   };
 
   // Calculate trends for each location
-  const getLocationTrends = (location: any) => {
+  const getLocationTrends = (location: Location) => {
     const salesTrend = calculateLocationSalesTrend(sales, location.id, { periodDays: 7 });
     const alertsTrend = calculateLocationAlertsTrend(alerts, location.id, { periodDays: 7 });
     

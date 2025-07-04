@@ -1,20 +1,29 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { apiService } from '../services/apiService';
 import { useDateRange } from './useDateRange';
+// Removed unused TrendCalculation, formatTrend imports
+
+// Define FormattedTrend structure based on formatTrend return type
+interface FormattedTrend {
+  value: string;
+  color: string;
+  icon: 'up' | 'down' | 'stable';
+  tooltip: string;
+}
 
 interface DashboardStats {
   totalSales: number;
   salesChange: number;
-  salesTrend?: any;
+  salesTrend?: FormattedTrend | null;
   totalLocations: number;
   locationsChange: number;
-  locationsTrend?: any;
+  locationsTrend?: FormattedTrend | null;
   activeAlerts: number;
   alertsChange: number;
-  alertsTrend?: any;
+  alertsTrend?: FormattedTrend | null;
   inventoryValue: number;
   inventoryChange: number;
-  inventoryTrend?: any;
+  inventoryTrend?: FormattedTrend | null;
 }
 
 interface SalesDataPoint {
@@ -46,12 +55,7 @@ interface RecentAlert {
   resolved: boolean;
 }
 
-interface DataLoading {
-  sales: boolean;
-  locations: boolean;
-  alerts: boolean;
-  products: boolean;
-}
+// Removed unused DataLoading interface
 
 export const useDashboard = () => {
   const [dashboardStats, setDashboardStats] = useState<DashboardStats>({
@@ -70,53 +74,53 @@ export const useDashboard = () => {
   const [recentLocations, setRecentLocations] = useState<RecentLocation[]>([]);
   const [recentAlerts, setRecentAlerts] = useState<RecentAlert[]>([]);
   const [loading, setLoading] = useState(false);
-  const [dataLoading, setDataLoading] = useState<DataLoading>({
-    sales: false,
-    locations: false,
-    alerts: false,
-    products: false
-  });
+  // Removed dataLoading and setDataLoading as they were unused
 
-  const { dateRange, filterByDateRange } = useDateRange();
+  const { dateRange } = useDateRange(); // Removed filterByDateRange
 
-  const fetchDashboardData = async () => {
+  const fetchDashboardData = useCallback(async () => {
     setLoading(true);
     try {
       // Fetch analytics data which includes dashboard stats
-      const analyticsResult = await apiService.getAnalytics('7d');
+      const analyticsResult = await apiService.getAnalytics(dateRange.key);
       if (analyticsResult.data) {
         const analytics = analyticsResult.data;
         
+        // Define types for items from analytics data to avoid 'any'
+        type AnalyticsLowStockItem = typeof analytics.productAnalytics.lowStockAlerts[0];
+        type AnalyticsDailySalesItem = typeof analytics.salesTrends.daily[0];
+        type AnalyticsLocationPerformanceItem = typeof analytics.locationAnalytics.performance[0];
+
         setDashboardStats({
           totalSales: analytics.overview.totalRevenue,
           salesChange: analytics.overview.revenueGrowth,
+          // TODO: Populate actual trends if analytics data provides them or calculate them
+          // salesTrend: formatTrend(calculateSalesTrend(analytics.salesTrends.daily...)),
           totalLocations: analytics.locationAnalytics.performance.length,
-          locationsChange: 0, // Would need historical data
+          locationsChange: 0,
           activeAlerts: analytics.productAnalytics.lowStockAlerts.length,
-          alertsChange: 0, // Would need historical data
-          inventoryValue: analytics.productAnalytics.lowStockAlerts.reduce((sum: number, item: any) => 
-            sum + (item.currentStock * 50), 0), // Estimate
-          inventoryChange: 0 // Would need historical data
+          alertsChange: 0,
+          inventoryValue: analytics.productAnalytics.lowStockAlerts.reduce((sum: number, item: AnalyticsLowStockItem) =>
+            sum + (item.currentStock * 50), 0), // Estimate, assuming price is 50
+          inventoryChange: 0
         });
 
-        // Set sales trend data
-        setSalesData(analytics.salesTrends.daily.map((day: any) => ({
+        setSalesData(analytics.salesTrends.daily.map((day: AnalyticsDailySalesItem) => ({
           name: day.date,
           sales: day.revenue
         })));
 
-        // Set location data
-        setRecentLocations(analytics.locationAnalytics.performance.map((location: any, index: number) => ({
-          id: `location-${index}`,
+        setRecentLocations(analytics.locationAnalytics.performance.map((location: AnalyticsLocationPerformanceItem, index: number) => ({
+          id: `location-${index}`, // Consider using actual location ID if available
           name: location.name,
-          manager: 'Manager', // Would come from actual location data
-          status: 'active',
+          manager: 'Manager', // Placeholder, should come from actual location data
+          status: 'active', // Placeholder
           locationSales: location.revenue,
-          locationAlerts: Math.floor(Math.random() * 5)
+          locationAlerts: Math.floor(Math.random() * 5) // Placeholder
         })));
       }
 
-      // Generate some mock category data since we don't have product categories in analytics yet
+      // Mock data should ideally be removed or replaced with actual data sources
       setCategoryData([
         { name: 'Electronics', value: 35, sales: 15000 },
         { name: 'Clothing', value: 25, sales: 10000 },
@@ -124,25 +128,9 @@ export const useDashboard = () => {
         { name: 'Books', value: 10, sales: 4000 },
         { name: 'Other', value: 10, sales: 4000 }
       ]);
-
-      // Generate some mock recent alerts
       setRecentAlerts([
-        {
-          id: '1',
-          message: 'Low stock alert for Product A',
-          severity: 'high',
-          location: 'Main Store',
-          timestamp: new Date().toISOString(),
-          resolved: false
-        },
-        {
-          id: '2',
-          message: 'Unusual sales activity detected',
-          severity: 'medium',
-          location: 'Branch Store',
-          timestamp: new Date(Date.now() - 3600000).toISOString(),
-          resolved: false
-        }
+        { id: '1', message: 'Low stock alert for Product A', severity: 'high', location: 'Main Store', timestamp: new Date().toISOString(), resolved: false },
+        { id: '2', message: 'Unusual sales activity detected', severity: 'medium', location: 'Branch Store', timestamp: new Date(Date.now() - 3600000).toISOString(), resolved: false }
       ]);
 
     } catch (error) {
@@ -150,11 +138,11 @@ export const useDashboard = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [dateRange]); // Added dateRange as a dependency
 
   useEffect(() => {
     fetchDashboardData();
-  }, [dateRange]);
+  }, [fetchDashboardData]); // Now depends on the memoized fetchDashboardData
 
   return {
     dashboardStats,
@@ -162,7 +150,7 @@ export const useDashboard = () => {
     categoryData,
     recentLocations,
     recentAlerts,
-    loading,
-    dataLoading
+    loading
+    // dataLoading removed
   };
 };

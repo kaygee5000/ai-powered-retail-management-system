@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { apiService } from '../services/apiService';
 
 interface AnalyticsData {
@@ -19,8 +19,16 @@ interface AnalyticsData {
       orders: number;
       customers: number;
     }>;
-    weekly: any[];
-    monthly: any[];
+    weekly: Array<{
+      week: string; // e.g., "YYYY-WNN"
+      revenue: number;
+      orders: number;
+    }>;
+    monthly: Array<{
+      month: string; // e.g., "YYYY-MM"
+      revenue: number;
+      orders: number;
+    }>;
   };
   productAnalytics: {
     topProducts: Array<{
@@ -29,7 +37,12 @@ interface AnalyticsData {
       quantity: number;
       growth: number;
     }>;
-    categoryPerformance: any[];
+    categoryPerformance: Array<{
+      category: string;
+      revenue: number;
+      quantity: number;
+      profit?: number;
+    }>;
     lowStockAlerts: Array<{
       name: string;
       currentStock: number;
@@ -44,7 +57,12 @@ interface AnalyticsData {
       growth: number;
       efficiency: number;
     }>;
-    comparison: any[];
+    comparison: Array<{
+      name: string;
+      currentRevenue: number;
+      previousRevenue: number;
+      changePercent: number;
+    }>;
   };
   customerInsights: {
     segments: Array<{
@@ -54,8 +72,16 @@ interface AnalyticsData {
       retention: number;
     }>;
     behavior: {
-      peakHours: any[];
-      seasonality: any[];
+      peakHours: Array<{
+        hour: string; // e.g., "14:00"
+        orders: number;
+        revenue?: number;
+      }>;
+      seasonality: Array<{
+        month: string; // e.g., "Jan", "Feb"
+        factor: number; // e.g., 1.2 for 20% above average
+        revenue?: number;
+      }>;
     };
   };
   predictiveAnalytics: {
@@ -99,36 +125,39 @@ interface AnalyticsData {
 export const useAdvancedAnalytics = (timeRange: string = '30d') => {
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [loading, setLoading] = useState(false);
-  const [aiProcessing, setAiProcessing] = useState(false);
+  // Removed unused aiProcessing state, as it's derived from loading in the return object
   const [error, setError] = useState<string | null>(null);
 
-  const fetchAnalytics = async () => {
+  const fetchAnalytics = useCallback(async () => {
     setLoading(true);
     setError(null);
+    // setAiProcessing(true); // Assuming AI processing starts with fetch
     try {
       const { data, error: apiError } = await apiService.getAnalytics(timeRange);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       setAnalyticsData(data);
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       setError(err.message);
       setAnalyticsData(null);
     } finally {
       setLoading(false);
+      // setAiProcessing(false); // AI processing ends
     }
-  };
+  }, [timeRange]); // Added timeRange to useCallback dependency
 
-  const refreshAnalytics = async () => {
+  const refreshAnalytics = useCallback(async () => {
     await fetchAnalytics();
-  };
+  }, [fetchAnalytics]);
 
   useEffect(() => {
     fetchAnalytics();
-  }, [timeRange]);
+  }, [fetchAnalytics]); // Now uses memoized fetchAnalytics
 
   return {
     analyticsData,
     loading,
-    aiProcessing,
+    aiProcessing: loading, // Reflect AI processing based on loading state, or manage separately
     error,
     refreshAnalytics
   };

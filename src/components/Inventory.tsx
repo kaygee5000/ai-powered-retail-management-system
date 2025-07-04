@@ -3,14 +3,10 @@ import {
   Package, 
   AlertTriangle, 
   Search, 
-  Filter, 
   Download,
   Plus,
   ArrowUpDown,
   MapPin,
-  Calendar,
-  TrendingDown,
-  TrendingUp,
   Edit,
   Trash2,
   X,
@@ -20,8 +16,8 @@ import {
   Wand2,
   Brain
 } from 'lucide-react';
-import { useProducts } from '../hooks/useProducts';
-import { useLocations } from '../hooks/useLocations';
+import { useProducts, Product } from '../hooks/useProducts';
+import { useLocations, Location } from '../hooks/useLocations';
 import { useCurrency } from '../hooks/useCurrency';
 import { 
   calculateInventoryTrend, 
@@ -31,7 +27,7 @@ import {
   formatTrend 
 } from '../utils/trendCalculations';
 import MetricCard from './analytics/MetricCard';
-import { aiService, GeneratedProductData } from '../services/aiService';
+import { aiService } from '../services/aiService'; // Removed GeneratedProductData
 
 interface ProductFormData {
   name: string;
@@ -46,9 +42,9 @@ interface ProductFormData {
 const ProductModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  product?: any;
+  product?: Product | null;
   onSave: (data: ProductFormData) => Promise<void>;
-  locations: any[];
+  locations: Location[];
 }> = ({ isOpen, onClose, product, onSave, locations }) => {
   const [formData, setFormData] = useState<ProductFormData>({
     name: product?.name || '',
@@ -491,8 +487,8 @@ const Inventory: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [editingProduct, setEditingProduct] = useState<any>(null);
-  const [deletingProduct, setDeletingProduct] = useState<any>(null);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
 
   const { products, loading: productsLoading, addProduct, updateProduct, deleteProduct } = useProducts();
   const { locations, loading: locationsLoading } = useLocations();
@@ -544,7 +540,7 @@ const Inventory: React.FC = () => {
   const lowStockTrend = calculateLowStockTrend(products, [], { periodDays: 7 });
   const productCountTrend = calculateProductCountTrend(products, [], { periodDays: 7 });
 
-  const getStockStatus = (product: any) => {
+  const getStockStatus = (product: Product) => {
     if (product.stock <= product.min_stock) return 'low';
     if (product.stock <= product.min_stock * 1.5) return 'medium';
     return 'good';
@@ -576,12 +572,12 @@ const Inventory: React.FC = () => {
     }
   };
 
-  const openEditModal = (product: any) => {
+  const openEditModal = (product: Product) => {
     setEditingProduct(product);
     setModalOpen(true);
   };
 
-  const openDeleteModal = (product: any) => {
+  const openDeleteModal = (product: Product) => {
     setDeletingProduct(product);
     setDeleteModalOpen(true);
   };

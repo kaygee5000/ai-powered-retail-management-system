@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { 
   Bell, 
   X, 
-  Check, 
   AlertTriangle, 
   MessageSquare, 
   Settings as SettingsIcon,
