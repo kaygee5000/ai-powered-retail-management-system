@@ -1,26 +1,32 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'; // Added useCallback
 import { User, Session } from '@supabase/supabase-js';
 import { apiService } from '../services/apiService';
 
-interface AuthContextType {
+export interface AuthContextType { // Exported AuthContextType
   user: User | null;
   session: Session | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<any>;
-  signUp: (email: string, password: string) => Promise<any>;
-  signOut: () => Promise<any>;
-  resetPassword: (email: string) => Promise<any>;
+  signIn: (email: string, password: string) => Promise<AuthResponse<AuthSession>>;
+  signUp: (email: string, password: string) => Promise<AuthResponse<AuthSession>>; // Or a specific type if signUp returns different data
+  signOut: () => Promise<AuthResponse<null>>; // No specific data on signOut success
+  resetPassword: (email: string) => Promise<AuthResponse<null>>; // Supabase resetPassword doesn't return significant data on success
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Define a generic response type for auth operations
+export interface AuthError {
+  message: string;
+  status?: number; // Optional status code
+  // [key: string]: any; // Temporarily removed index signature
+}
+export interface AuthResponse<T> {
+  data: T | null;
+  error: AuthError | string | null;
+}
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (!context) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+
+export const AuthContext = createContext<AuthContextType | undefined>(undefined); // Export AuthContext
+
+// useAuth hook has been moved to src/contexts/useAuthHook.ts
 
 interface AuthSession {
   user: User;
@@ -34,18 +40,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Token management
-  const getStoredTokens = () => {
+  // Token management - these helpers don't depend on state/props, so they are stable
+  const getStoredTokens = useCallback(() => {
     try {
       const accessToken = localStorage.getItem('access_token');
       const refreshToken = localStorage.getItem('refresh_token');
       return { accessToken, refreshToken };
-    } catch (error) {
+    } catch {
       return { accessToken: null, refreshToken: null };
     }
-  };
+  }, []);
 
-  const storeTokens = (accessToken: string, refreshToken?: string) => {
+  const storeTokens = useCallback((accessToken: string, refreshToken?: string) => {
     try {
       localStorage.setItem('access_token', accessToken);
       if (refreshToken) {
@@ -54,18 +60,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } catch (error) {
       console.warn('Failed to store auth tokens:', error);
     }
-  };
+  }, []);
 
-  const clearTokens = () => {
+  const clearTokens = useCallback(() => {
     try {
       localStorage.removeItem('access_token');
       localStorage.removeItem('refresh_token');
     } catch (error) {
       console.warn('Failed to clear auth tokens:', error);
     }
-  };
+  }, []);
 
-  const updateAuthState = (authData: AuthSession | null) => {
+  const updateAuthState = useCallback((authData: AuthSession | null) => {
     if (authData) {
       setUser(authData.user);
       setSession(authData.session);
@@ -75,9 +81,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(null);
       clearTokens();
     }
-  };
+  }, [storeTokens, clearTokens]);
 
-  const checkSession = async () => {
+  const checkSession = useCallback(async () => {
     setLoading(true);
     try {
       const { accessToken, refreshToken } = getStoredTokens();
@@ -117,7 +123,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     } finally {
       setLoading(false);
     }
-  };
+  }, [getStoredTokens, updateAuthState, clearTokens]); // Added missing ')' and dependency array
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -129,8 +135,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       updateAuthState(data);
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (e: unknown) {
+      const errorMessage = String(e instanceof Error ? e.message : e);
+      return { data: null, error: errorMessage };
     }
   };
 
@@ -148,8 +155,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       return { data, error: null };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (e: unknown) {
+      const errorMessage = String(e instanceof Error ? e.message : e);
+      return { data: null, error: errorMessage };
     }
   };
 
@@ -163,10 +171,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       updateAuthState(null);
       return { error: null };
-    } catch (error: any) {
+    } catch (e: unknown) {
+      const errorMessage = String(e instanceof Error ? e.message : e);
       // Still clear local state even if API call fails
       updateAuthState(null);
-      return { error: error.message };
+      return { error: errorMessage };
     }
   };
 
@@ -174,8 +183,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       const { data, error } = await apiService.resetPassword(email);
       return { data, error };
-    } catch (error: any) {
-      return { data: null, error: error.message };
+    } catch (e: unknown) {
+      const errorMessage = String(e instanceof Error ? e.message : e);
+      return { data: null, error: errorMessage };
     }
   };
 
@@ -198,11 +208,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }, 15 * 60 * 1000); // Refresh every 15 minutes
 
     return () => clearInterval(refreshInterval);
-  }, [user]);
+  }, [user, updateAuthState, getStoredTokens]); // Added updateAuthState and getStoredTokens
 
   useEffect(() => {
     checkSession();
-  }, []);
+  }, [checkSession]); // Added checkSession
 
   const value = {
     user,

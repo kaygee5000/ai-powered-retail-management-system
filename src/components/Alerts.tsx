@@ -10,8 +10,6 @@ import {
   TrendingDown,
   Shield,
   X,
-  Eye,
-  MoreVertical,
   Plus,
   Edit,
   Trash2,
@@ -26,10 +24,12 @@ import {
   formatTrend 
 } from '../utils/trendCalculations';
 import MetricCard from './analytics/MetricCard';
+import { Alert } from '../hooks/useAlerts';
+import { Location } from '../hooks/useLocations';
 
 interface AlertFormData {
-  type: 'low_stock' | 'high_return' | 'unusual_activity' | 'sales_spike' | 'system';
-  severity: 'low' | 'medium' | 'high';
+  type: Alert['type'];
+  severity: Alert['severity'];
   message: string;
   location_id: string;
   timestamp: string;
@@ -38,9 +38,9 @@ interface AlertFormData {
 const AlertModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
-  alert?: any;
+  alert?: Alert | null;
   onSave: (data: AlertFormData) => Promise<void>;
-  locations: any[];
+  locations: Location[];
 }> = ({ isOpen, onClose, alert, onSave, locations }) => {
   const [formData, setFormData] = useState<AlertFormData>({
     type: alert?.type || 'system',
@@ -118,7 +118,7 @@ const AlertModal: React.FC<{
               </label>
               <select
                 value={formData.type}
-                onChange={(e) => setFormData({ ...formData, type: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, type: e.target.value as Alert['type'] })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {alertTypes.map(type => (
@@ -133,7 +133,7 @@ const AlertModal: React.FC<{
               </label>
               <select
                 value={formData.severity}
-                onChange={(e) => setFormData({ ...formData, severity: e.target.value as any })}
+                onChange={(e) => setFormData({ ...formData, severity: e.target.value as Alert['severity'] })}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 {severityLevels.map(level => (
@@ -299,8 +299,8 @@ const Alerts: React.FC = () => {
   const [filter, setFilter] = useState('all');
   const [modalOpen, setModalOpen] = useState(false);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [editingAlert, setEditingAlert] = useState<any>(null);
-  const [deletingAlert, setDeletingAlert] = useState<any>(null);
+  const [editingAlert, setEditingAlert] = useState<Alert | null>(null);
+  const [deletingAlert, setDeletingAlert] = useState<Alert | null>(null);
 
   const { alerts, loading: alertsLoading, addAlert, resolveAlert, deleteAlert } = useAlerts();
   const { locations, loading: locationsLoading } = useLocations();
@@ -404,12 +404,12 @@ const Alerts: React.FC = () => {
     }
   };
 
-  const openEditModal = (alert: any) => {
+  const openEditModal = (alert: Alert) => {
     setEditingAlert(alert);
     setModalOpen(true);
   };
 
-  const openDeleteModal = (alert: any) => {
+  const openDeleteModal = (alert: Alert) => {
     setDeletingAlert(alert);
     setDeleteModalOpen(true);
   };

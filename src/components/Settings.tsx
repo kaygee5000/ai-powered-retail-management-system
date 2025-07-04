@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { 
-  Settings as SettingsIcon, 
   User, 
   Bell, 
   Database, 
@@ -13,8 +12,9 @@ import {
   CheckCircle,
   AlertCircle,
   Loader2
-} from 'lucide-react';
-import { useSettingsContext } from '../contexts/SettingsContext';
+} from 'lucide-react'; // Removed SettingsIcon
+import { useSettingsContext } from '../contexts/useSettingsContextHook'; // Updated import path
+import { UserSettings } from '../hooks/useSettings'; // Import UserSettings
 import { currencies, countries } from '../utils/currency';
 
 const Settings: React.FC = () => {
@@ -26,7 +26,7 @@ const Settings: React.FC = () => {
     settings,
     loading,
     saving,
-    error,
+    // error, // Removed unused variable
     updateProfileData,
     updateNotificationPreferences,
     updateAISettings,
@@ -70,7 +70,10 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleAISettingChange = async (key: string, value: any) => {
+  const handleAISettingChange = async <K extends keyof UserSettings['ai_settings']>(
+    key: K,
+    value: UserSettings['ai_settings'][K]
+  ) => {
     const result = await updateAISettings({ [key]: value });
     
     if (!result.success) {
@@ -78,7 +81,10 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleSecuritySettingChange = async (key: string, value: any) => {
+  const handleSecuritySettingChange = async <K extends keyof UserSettings['security_settings']>(
+    key: K,
+    value: UserSettings['security_settings'][K]
+  ) => {
     const result = await updateSecuritySettings({ [key]: value });
     
     if (result.success) {
@@ -88,7 +94,10 @@ const Settings: React.FC = () => {
     }
   };
 
-  const handleAppearanceChange = async (key: string, value: any) => {
+  const handleAppearanceChange = async <K extends keyof UserSettings['appearance_settings']>(
+    key: K,
+    value: UserSettings['appearance_settings'][K]
+  ) => {
     const result = await updateAppearanceSettings({ [key]: value });
     
     if (result.success) {

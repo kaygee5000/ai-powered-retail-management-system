@@ -3,9 +3,7 @@ import {
   BarChart3, 
   TrendingUp, 
   TrendingDown,
-  Calendar,
   Download,
-  Filter,
   RefreshCw,
   DollarSign,
   Package,
@@ -14,9 +12,7 @@ import {
   Loader2,
   Clock,
   Target,
-  Zap,
-  Eye,
-  Brain
+  Zap
 } from 'lucide-react';
 import { useAdvancedAnalytics } from '../hooks/useAdvancedAnalytics';
 import { useCurrency } from '../hooks/useCurrency';
@@ -43,7 +39,7 @@ const Analytics: React.FC = () => {
   const { format } = useCurrency();
   const { sales } = useSales();
   const { products } = useProducts();
-  const { locations } = useLocations();
+  useLocations(); // Called for potential side effects or if its state is used indirectly
 
   const timeRangeOptions = [
     { value: '7d', label: 'Last 7 Days' },

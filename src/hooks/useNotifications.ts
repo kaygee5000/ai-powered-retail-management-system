@@ -7,7 +7,7 @@ interface Notification {
   type: 'alert' | 'report' | 'system' | 'connection' | 'heartbeat';
   title?: string;
   message: string;
-  data?: any;
+  data?: Record<string, unknown>;
   timestamp: string;
   fromUserId?: string;
 }
@@ -59,7 +59,7 @@ export const useNotifications = () => {
     title: string;
     message: string;
     userId?: string;
-    data?: any;
+    data?: Record<string, unknown>;
   }) => {
     try {
       const { error } = await apiService.sendNotification(notification);

@@ -1,21 +1,17 @@
 import React from 'react';
 import { 
   TrendingUp, 
-  TrendingDown, 
   Store, 
   AlertTriangle, 
   Package,
   DollarSign,
-  ArrowUpRight,
-  ArrowDownRight,
-  Clock,
   Loader2,
   Brain,
   Eye,
   BarChart3,
   Users
 } from 'lucide-react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
+import { Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, AreaChart, Area } from 'recharts';
 import { useDashboard } from '../hooks/useDashboard';
 import { useAdvancedAnalytics } from '../hooks/useAdvancedAnalytics';
 import { useCurrency } from '../hooks/useCurrency';
@@ -29,8 +25,6 @@ const Dashboard: React.FC = () => {
   const { 
     dateRange, 
     updateDateRange, 
-    filterByDateRange, 
-    formatMetricWithContext,
     getPeriodInfo 
   } = useDateRange();
 
@@ -40,7 +34,6 @@ const Dashboard: React.FC = () => {
     categoryData, 
     recentLocations, 
     recentAlerts, 
-    loading,
     dataLoading 
   } = useDashboard();
 

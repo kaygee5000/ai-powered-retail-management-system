@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { DateRange, getDefaultDateRange, getPeriodDaysFromRange, isDateInRange } from '../components/DateRangePicker';
+import { DateRange, getDefaultDateRange, getPeriodDaysFromRange, isDateInRange } from '../utils/dateRangeUtils';
 
 export const useDateRange = (initialRange?: DateRange) => {
   const [dateRange, setDateRange] = useState<DateRange>(initialRange || getDefaultDateRange());

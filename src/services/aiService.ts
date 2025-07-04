@@ -222,7 +222,7 @@ class AIService {
   async generateBusinessInsights(analyticsSummary: string): Promise<AIInsightsResponse> {
     if (!this.apiKey) {
       // Use rule-based insights generation as fallback
-      const insights = this.generateRuleBasedInsights(analyticsSummary);
+      const insights = this.generateRuleBasedInsights();
       return { success: true, insights };
     }
 
@@ -235,13 +235,13 @@ class AIService {
         return { success: true, insights };
       } else {
         // Fallback to rule-based insights
-        const insights = this.generateRuleBasedInsights(analyticsSummary);
+        const insights = this.generateRuleBasedInsights();
         return { success: true, insights };
       }
     } catch (error) {
       console.error('Error generating business insights:', error);
       // Fallback to rule-based insights
-      const insights = this.generateRuleBasedInsights(analyticsSummary);
+      const insights = this.generateRuleBasedInsights();
       return { success: true, insights };
     }
   }
@@ -356,7 +356,7 @@ Response:`;
         const parsed = JSON.parse(jsonMatch[0]);
         return this.validateProductData(parsed);
       }
-    } catch (e) {
+    } catch { // Removed unused 'e'
       // JSON parsing failed, continue with rule-based
     }
 
@@ -370,7 +370,7 @@ Response:`;
         const parsed = JSON.parse(jsonMatch[0]);
         return this.validateSaleData(parsed);
       }
-    } catch (e) {
+    } catch { // Removed unused 'e'
       // JSON parsing failed, continue with rule-based
     }
 
@@ -384,7 +384,7 @@ Response:`;
         const parsed = JSON.parse(jsonMatch[0]);
         return this.validateAlertData(parsed);
       }
-    } catch (e) {
+    } catch { // Removed unused 'e'
       // JSON parsing failed, continue with rule-based
     }
 
@@ -398,7 +398,7 @@ Response:`;
         const parsed = JSON.parse(jsonMatch[0]);
         return this.validateLocationData(parsed);
       }
-    } catch (e) {
+    } catch { // Removed unused 'e'
       // JSON parsing failed, continue with rule-based
     }
 
@@ -412,7 +412,7 @@ Response:`;
         const parsed = JSON.parse(jsonMatch[0]);
         return this.validateInsightsData(parsed);
       }
-    } catch (e) {
+    } catch { // Removed unused 'e', warning is sufficient
       console.warn('Failed to parse AI insights response, using fallback');
     }
 
@@ -421,7 +421,7 @@ Response:`;
   }
 
   // Validation methods
-  private validateProductData(data: any): GeneratedProductData {
+  private validateProductData(data: Record<string, unknown>): GeneratedProductData {
     const result: GeneratedProductData = {};
     
     if (typeof data.name === 'string' && data.name.trim()) {
@@ -451,7 +451,7 @@ Response:`;
     return result;
   }
 
-  private validateSaleData(data: any): GeneratedSaleData {
+  private validateSaleData(data: Record<string, unknown>): GeneratedSaleData {
     const result: GeneratedSaleData = {};
     
     if (typeof data.timestamp === 'string') {
@@ -477,10 +477,10 @@ Response:`;
     return result;
   }
 
-  private validateAlertData(data: any): GeneratedAlertData {
+  private validateAlertData(data: Record<string, unknown>): GeneratedAlertData {
     const result: GeneratedAlertData = {};
     
-    if (['low_stock', 'high_return', 'unusual_activity', 'sales_spike', 'system'].includes(data.type)) {
+    if (typeof data.type === 'string' && ['low_stock', 'high_return', 'unusual_activity', 'sales_spike', 'system'].includes(data.type)) {
       result.type = data.type;
     }
     
@@ -499,7 +499,7 @@ Response:`;
     return result;
   }
 
-  private validateLocationData(data: any): GeneratedLocationData {
+  private validateLocationData(data: Record<string, unknown>): GeneratedLocationData {
     const result: GeneratedLocationData = {};
     
     if (typeof data.name === 'string' && data.name.trim()) {
@@ -521,7 +521,7 @@ Response:`;
     return result;
   }
 
-  private validateInsightsData(data: any): BusinessInsights {
+  private validateInsightsData(data: Record<string, unknown>): BusinessInsights {
     const result: BusinessInsights = {
       keyFindings: [],
       recommendations: [],
@@ -530,28 +530,31 @@ Response:`;
     };
 
     if (Array.isArray(data.keyFindings)) {
-      result.keyFindings = data.keyFindings.filter((f: any) => typeof f === 'string');
+      result.keyFindings = data.keyFindings.filter((f: unknown): f is string => typeof f === 'string');
     }
 
     if (Array.isArray(data.recommendations)) {
-      result.recommendations = data.recommendations.filter((r: any) => 
-        r && typeof r.type === 'string' && typeof r.title === 'string' && 
-        typeof r.description === 'string' && typeof r.impact === 'string'
-      );
+      result.recommendations = data.recommendations.filter((r: unknown): r is BusinessInsights['recommendations'][0] => {
+        const rec = r as Record<string, unknown>;
+        return rec && typeof rec.type === 'string' && typeof rec.title === 'string' &&
+               typeof rec.description === 'string' && typeof rec.impact === 'string';
+      });
     }
 
     if (Array.isArray(data.anomalies)) {
-      result.anomalies = data.anomalies.filter((a: any) => 
-        a && typeof a.type === 'string' && typeof a.description === 'string' &&
-        ['low', 'medium', 'high'].includes(a.severity)
-      );
+      result.anomalies = data.anomalies.filter((a: unknown): a is BusinessInsights['anomalies'][0] => {
+        const anomaly = a as Record<string, unknown>;
+        return anomaly && typeof anomaly.type === 'string' && typeof anomaly.description === 'string' &&
+               typeof anomaly.severity === 'string' && ['low', 'medium', 'high'].includes(anomaly.severity);
+      });
     }
 
     if (Array.isArray(data.opportunities)) {
-      result.opportunities = data.opportunities.filter((o: any) => 
-        o && typeof o.title === 'string' && typeof o.description === 'string' &&
-        typeof o.potentialValue === 'number'
-      );
+      result.opportunities = data.opportunities.filter((o: unknown): o is BusinessInsights['opportunities'][0] => {
+        const opp = o as Record<string, unknown>;
+        return opp && typeof opp.title === 'string' && typeof opp.description === 'string' &&
+               typeof opp.potentialValue === 'number';
+      });
     }
 
     return result;
@@ -681,14 +684,17 @@ Response:`;
       if (jsonMatch) {
         return JSON.parse(jsonMatch[0]);
       }
-    } catch (e) {
+    } catch { // Removed unused 'e'
       // JSON parsing failed, continue with rule-based
     }
 
     return this.extractDataWithRules(aiText);
   }
 
-  private extractDataWithRules(text: string): ParsedReportData {
+  private extractDataWithRules(
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    text: string
+  ): ParsedReportData {
     const result: ParsedReportData = {
       inventory: [],
       alerts: [],
@@ -771,7 +777,7 @@ Response:`;
   }
 
   // Rule-based insights generation
-  private generateRuleBasedInsights(summary: string): BusinessInsights {
+  private generateRuleBasedInsights(): BusinessInsights { // Removed unused _summary parameter
     const keyFindings: string[] = [];
     const recommendations: BusinessInsights['recommendations'] = [];
     const anomalies: BusinessInsights['anomalies'] = [];

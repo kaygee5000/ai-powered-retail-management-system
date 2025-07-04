@@ -1,3 +1,8 @@
+import { Sale } from '../hooks/useSales';
+import { Alert } from '../hooks/useAlerts';
+import { Product } from '../hooks/useProducts';
+import { Location } from '../hooks/useLocations';
+
 export interface TrendCalculation {
   current: number;
   previous: number;
@@ -45,7 +50,7 @@ export const calculateTrend = (
  * Calculate sales trend from sales data
  */
 export const calculateSalesTrend = (
-  sales: any[], 
+  sales: Sale[],
   options: TrendOptions = {}
 ): TrendCalculation => {
   const { periodDays = 7, comparisonPeriodDays = 7 } = options;
@@ -84,7 +89,7 @@ export const calculateSalesTrend = (
  * Calculate location-specific sales trend
  */
 export const calculateLocationSalesTrend = (
-  sales: any[],
+  sales: Sale[],
   locationId: string,
   options: TrendOptions = {}
 ): TrendCalculation => {
@@ -96,7 +101,7 @@ export const calculateLocationSalesTrend = (
  * Calculate alerts trend
  */
 export const calculateAlertsTrend = (
-  alerts: any[], 
+  alerts: Alert[],
   options: TrendOptions = {}
 ): TrendCalculation => {
   const { periodDays = 7, comparisonPeriodDays = 7 } = options;
@@ -132,7 +137,7 @@ export const calculateAlertsTrend = (
  * Calculate location-specific alerts trend
  */
 export const calculateLocationAlertsTrend = (
-  alerts: any[],
+  alerts: Alert[],
   locationId: string,
   options: TrendOptions = {}
 ): TrendCalculation => {
@@ -144,9 +149,9 @@ export const calculateLocationAlertsTrend = (
  * Calculate inventory value trend
  */
 export const calculateInventoryTrend = (
-  products: any[], 
-  previousProducts: any[] = [], 
-  options: TrendOptions = {}
+  products: Product[],
+  previousProducts: Product[] = []
+  // options: TrendOptions = {} // Removed unused options
 ): TrendCalculation => {
   const currentValue = products.reduce((sum, product) => 
     sum + (product.price * product.stock), 0
@@ -167,9 +172,9 @@ export const calculateInventoryTrend = (
  * Calculate inventory units trend
  */
 export const calculateInventoryUnitsTrend = (
-  products: any[], 
-  previousProducts: any[] = [], 
-  options: TrendOptions = {}
+  products: Product[],
+  previousProducts: Product[] = []
+  // options: TrendOptions = {} // Removed unused options
 ): TrendCalculation => {
   const currentUnits = products.reduce((sum, product) => sum + product.stock, 0);
   const previousUnits = previousProducts.length > 0 
@@ -187,9 +192,9 @@ export const calculateInventoryUnitsTrend = (
  * Calculate low stock items trend
  */
 export const calculateLowStockTrend = (
-  products: any[], 
-  previousProducts: any[] = [], 
-  options: TrendOptions = {}
+  products: Product[],
+  previousProducts: Product[] = []
+  // options: TrendOptions = {} // Removed unused options
 ): TrendCalculation => {
   const currentLowStock = products.filter(p => p.stock <= p.min_stock).length;
   const previousLowStock = previousProducts.length > 0 
@@ -207,9 +212,9 @@ export const calculateLowStockTrend = (
  * Calculate locations trend
  */
 export const calculateLocationsTrend = (
-  locations: any[], 
-  previousLocations: any[] = [], 
-  options: TrendOptions = {}
+  locations: Location[],
+  previousLocations: Location[] = []
+  // options: TrendOptions = {} // Removed unused options
 ): TrendCalculation => {
   const currentCount = locations.filter(loc => loc.status === 'active').length;
   const previousCount = previousLocations.length > 0 
@@ -227,7 +232,7 @@ export const calculateLocationsTrend = (
  * Calculate order trend
  */
 export const calculateOrdersTrend = (
-  sales: any[], 
+  sales: Sale[],
   options: TrendOptions = {}
 ): TrendCalculation => {
   const { periodDays = 7, comparisonPeriodDays = 7 } = options;
@@ -261,7 +266,7 @@ export const calculateOrdersTrend = (
  * Calculate average order value trend
  */
 export const calculateAOVTrend = (
-  sales: any[], 
+  sales: Sale[],
   options: TrendOptions = {}
 ): TrendCalculation => {
   const { periodDays = 7, comparisonPeriodDays = 7 } = options;
@@ -303,7 +308,7 @@ export const calculateAOVTrend = (
  * Calculate customer retention trend (using staff as proxy for customers)
  */
 export const calculateCustomerRetentionTrend = (
-  sales: any[], 
+  sales: Sale[],
   options: TrendOptions = {}
 ): TrendCalculation => {
   const { periodDays = 30, comparisonPeriodDays = 30 } = options;
@@ -354,7 +359,7 @@ export const calculateCustomerRetentionTrend = (
  * Calculate items sold trend
  */
 export const calculateItemsSoldTrend = (
-  sales: any[], 
+  sales: Sale[],
   options: TrendOptions = {}
 ): TrendCalculation => {
   const { periodDays = 7, comparisonPeriodDays = 7 } = options;
@@ -392,9 +397,9 @@ export const calculateItemsSoldTrend = (
  * Calculate product count trend
  */
 export const calculateProductCountTrend = (
-  products: any[], 
-  previousProducts: any[] = [], 
-  options: TrendOptions = {}
+  products: Product[],
+  previousProducts: Product[] = []
+  // options: TrendOptions = {} // Removed unused options
 ): TrendCalculation => {
   const currentCount = products.length;
   const previousCount = previousProducts.length || Math.floor(currentCount * 0.95); // Fallback

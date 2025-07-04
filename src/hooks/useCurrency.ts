@@ -1,4 +1,4 @@
-import { useSettingsContext } from '../contexts/SettingsContext';
+import { useSettingsContext } from '../contexts/useSettingsContextHook'; // Updated import path
 import { formatCurrency, getCurrencySymbol } from '../utils/currency';
 
 export const useCurrency = () => {

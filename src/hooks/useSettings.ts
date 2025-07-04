@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { apiService } from '../services/apiService';
 
 export interface UserSettings {
@@ -89,142 +89,148 @@ export const useSettings = () => {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
       const { data, error: apiError } = await apiService.getSettings();
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
       if (data) {
         setSettings(data);
       }
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       setError(err.message);
       console.error('Failed to fetch settings:', err);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const updateProfileData = async (profileData: Partial<UserSettings['profile_data']>) => {
+  const updateProfileData = useCallback(async (profileData: Partial<UserSettings['profile_data']>) => {
     setSaving(true);
     try {
       const { data, error: apiError } = await apiService.updateSettings({
         profile_data: { ...settings.profile_data, ...profileData }
       });
       
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
       if (data) {
         setSettings(data);
       }
       
       return { success: true, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       const errorMessage = err.message;
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setSaving(false);
     }
-  };
+  }, [settings.profile_data]);
 
-  const updateNotificationPreferences = async (preferences: Partial<UserSettings['notification_preferences']>) => {
+  const updateNotificationPreferences = useCallback(async (preferences: Partial<UserSettings['notification_preferences']>) => {
     setSaving(true);
     try {
       const { data, error: apiError } = await apiService.updateSettings({
         notification_preferences: { ...settings.notification_preferences, ...preferences }
       });
       
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
       if (data) {
         setSettings(data);
       }
       
       return { success: true, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       const errorMessage = err.message;
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setSaving(false);
     }
-  };
+  }, [settings.notification_preferences]);
 
-  const updateAISettings = async (aiSettings: Partial<UserSettings['ai_settings']>) => {
+  const updateAISettings = useCallback(async (aiSettings: Partial<UserSettings['ai_settings']>) => {
     setSaving(true);
     try {
       const { data, error: apiError } = await apiService.updateSettings({
         ai_settings: { ...settings.ai_settings, ...aiSettings }
       });
       
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
       if (data) {
         setSettings(data);
       }
       
       return { success: true, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       const errorMessage = err.message;
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setSaving(false);
     }
-  };
+  }, [settings.ai_settings]);
 
-  const updateSecuritySettings = async (securitySettings: Partial<UserSettings['security_settings']>) => {
+  const updateSecuritySettings = useCallback(async (securitySettings: Partial<UserSettings['security_settings']>) => {
     setSaving(true);
     try {
       const { data, error: apiError } = await apiService.updateSettings({
         security_settings: { ...settings.security_settings, ...securitySettings }
       });
       
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
       if (data) {
         setSettings(data);
       }
       
       return { success: true, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       const errorMessage = err.message;
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setSaving(false);
     }
-  };
+  }, [settings.security_settings]);
 
-  const updateAppearanceSettings = async (appearanceSettings: Partial<UserSettings['appearance_settings']>) => {
+  const updateAppearanceSettings = useCallback(async (appearanceSettings: Partial<UserSettings['appearance_settings']>) => {
     setSaving(true);
     try {
       const { data, error: apiError } = await apiService.updateSettings({
         appearance_settings: { ...settings.appearance_settings, ...appearanceSettings }
       });
       
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
       if (data) {
         setSettings(data);
       }
       
       return { success: true, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       const errorMessage = err.message;
       setError(errorMessage);
       return { success: false, error: errorMessage };
     } finally {
       setSaving(false);
     }
-  };
+  }, [settings.appearance_settings]);
 
   useEffect(() => {
     fetchSettings();
-  }, []);
+  }, [fetchSettings]);
 
   return {
     settings,

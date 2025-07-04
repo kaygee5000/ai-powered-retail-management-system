@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react'; // Added useCallback
 import { apiService } from '../services/apiService';
 
 interface Product {
@@ -38,22 +38,23 @@ export const useProducts = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchProducts = async (filters: ProductFilters = {}) => {
+  const fetchProducts = useCallback(async (filters: ProductFilters = {}) => {
     setLoading(true);
     setError(null);
     try {
       const { data, error: apiError } = await apiService.getProducts(filters);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       setProducts(data || []);
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       setError(err.message);
       setProducts([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  const addProduct = async (productData: {
+  const addProduct = useCallback(async (productData: {
     name: string;
     sku: string;
     category: string;
@@ -64,17 +65,17 @@ export const useProducts = () => {
   }) => {
     try {
       const { data, error: apiError } = await apiService.createProduct(productData);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
-      // Refresh the products list
       await fetchProducts();
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, [fetchProducts]);
 
-  const updateProduct = async (id: string, updates: Partial<{
+  const updateProduct = useCallback(async (id: string, updates: Partial<{
     name: string;
     sku: string;
     category: string;
@@ -85,42 +86,43 @@ export const useProducts = () => {
   }>) => {
     try {
       const { data, error: apiError } = await apiService.updateProduct(id, updates);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
-      // Refresh the products list
       await fetchProducts();
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, [fetchProducts]);
 
-  const deleteProduct = async (id: string) => {
+  const deleteProduct = useCallback(async (id: string) => {
     try {
       const { data, error: apiError } = await apiService.deleteProduct(id);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       
-      // Refresh the products list
       await fetchProducts();
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, [fetchProducts]);
 
-  const getProduct = async (id: string) => {
+  const getProduct = useCallback(async (id: string) => {
     try {
       const { data, error: apiError } = await apiService.getProduct(id);
-      if (apiError) throw new Error(apiError);
+      if (apiError) throw new Error(apiError.message || String(apiError));
       return { data, error: null };
-    } catch (err: any) {
+    } catch (e: unknown) {
+      const err = e instanceof Error ? e : new Error(String(e));
       return { data: null, error: err.message };
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [fetchProducts]);
 
   return {
     products,
