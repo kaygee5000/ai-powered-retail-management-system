@@ -402,7 +402,7 @@ Response:`;
       // JSON parsing failed, continue with rule-based
     }
 
-    return this.extractLocationWithRules(aiText);
+    return this.extractLocationWithRules();
   }
 
   private extractInsightsFromAIResponse(aiText: string): BusinessInsights {
@@ -592,7 +592,7 @@ Response:`;
   }
 
   private fallbackLocationParsing(description: string): LocationGenerationResponse {
-    const locationData = this.extractLocationWithRules(description);
+    const locationData = this.extractLocationWithRules();
     
     return {
       success: true,
@@ -668,7 +668,7 @@ Response:`;
     return result;
   }
 
-  private extractLocationWithRules(text: string): GeneratedLocationData {
+  private extractLocationWithRules(): GeneratedLocationData {
     const result: GeneratedLocationData = {};
 
     // Extract basic info
@@ -688,13 +688,10 @@ Response:`;
       // JSON parsing failed, continue with rule-based
     }
 
-    return this.extractDataWithRules(aiText);
+    return this.extractDataWithRules();
   }
 
-  private extractDataWithRules(
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    text: string
-  ): ParsedReportData {
+  private extractDataWithRules(): ParsedReportData {
     const result: ParsedReportData = {
       inventory: [],
       alerts: [],

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './contexts/useAuthHook';
 import { SettingsProvider } from './contexts/SettingsContext';
 import AuthLayout from './components/auth/AuthLayout';
 import LoadingSpinner from './components/LoadingSpinner';

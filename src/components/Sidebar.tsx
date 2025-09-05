@@ -11,7 +11,7 @@ import {
   LogOut,
   ShoppingCart
 } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuthHook';
 import NotificationCenter from './NotificationCenter';
 
 interface SidebarProps {

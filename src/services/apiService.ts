@@ -73,12 +73,19 @@ class ApiService {
       const data = await response.json();
 
       if (!response.ok) {
+        // If we get a "Endpoint not found" error, this means the function isn't deployed
+        if (data.error === "Endpoint not found" || response.status === 404) {
+          throw new Error("FUNCTION_NOT_FOUND");
+        }
         return { data: null, error: data.error || `HTTP ${response.status}` };
       }
 
       return { data, error: null };
     } catch (e: unknown) {
       const error = e instanceof Error ? e : new Error(String(e));
+      if (error.message === "FUNCTION_NOT_FOUND") {
+        throw error; // Re-throw to allow fallback handling
+      }
       return { data: null, error: error.message || 'Network error' };
     }
   }
@@ -211,17 +218,87 @@ class ApiService {
     page?: number;
     limit?: number;
   }) {
-    const params = new URLSearchParams();
-    if (filters) {
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null && value !== '') {
-          params.append(key, value.toString());
-        }
-      });
+    try {
+      const params = new URLSearchParams();
+      if (filters) {
+        Object.entries(filters).forEach(([key, value]) => {
+          if (value !== undefined && value !== null && value !== '') {
+            params.append(key, value.toString());
+          }
+        });
+      }
+      
+      const queryString = params.toString();
+      return await this.request<Product[]>(`/products${queryString ? `?${queryString}` : ''}`);
+    } catch (error) {
+      if (String(error).includes("FUNCTION_NOT_FOUND")) {
+        // Fallback to direct Supabase query
+        return this.getProductsFallback(filters);
+      }
+      throw error;
     }
-    
-    const queryString = params.toString();
-    return this.request<Product[]>(`/products${queryString ? `?${queryString}` : ''}`);
+  }
+
+  private async getProductsFallback(filters?: {
+    category?: string;
+    location_id?: string;
+    low_stock?: boolean;
+    min_price?: number;
+    max_price?: number;
+    search?: string;
+    sku?: string;
+    sort_by?: string;
+    sort_order?: 'asc' | 'desc';
+    page?: number;
+    limit?: number;
+  }) {
+    try {
+      let query = supabase
+        .from('products')
+        .select(`
+          *,
+          location:locations(name)
+        `);
+
+      // Apply filters
+      if (filters) {
+        if (filters.category) {
+          query = query.eq('category', filters.category);
+        }
+        if (filters.location_id) {
+          query = query.eq('location_id', filters.location_id);
+        }
+        if (filters.low_stock) {
+          query = query.filter('stock', 'lte', supabase.rpc('min_stock'));
+        }
+        if (filters.min_price) {
+          query = query.gte('price', filters.min_price);
+        }
+        if (filters.max_price) {
+          query = query.lte('price', filters.max_price);
+        }
+        if (filters.search) {
+          query = query.or(`name.ilike.%${filters.search}%,sku.ilike.%${filters.search}%`);
+        }
+        if (filters.sku) {
+          query = query.eq('sku', filters.sku);
+        }
+        if (filters.sort_by) {
+          query = query.order(filters.sort_by, { ascending: filters.sort_order !== 'desc' });
+        }
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        return { data: null, error: error.message };
+      }
+
+      return { data: data || [], error: null };
+    } catch (e: unknown) {
+      const error = e instanceof Error ? e : new Error(String(e));
+      return { data: null, error: error.message };
+    }
   }
 
   async getProduct(id: string) {

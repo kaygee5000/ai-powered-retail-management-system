@@ -1,6 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react'; // Added useCallback
+import React, { createContext, useEffect, useState, useCallback } from 'react'; // Added useCallback
 import { User, Session } from '@supabase/supabase-js';
-import { apiService } from '../services/apiService';
+import { supabase } from '../lib/supabase';
 
 export interface AuthContextType { // Exported AuthContextType
   user: User | null;
@@ -40,101 +40,63 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
 
-  // Token management - these helpers don't depend on state/props, so they are stable
-  const getStoredTokens = useCallback(() => {
-    try {
-      const accessToken = localStorage.getItem('access_token');
-      const refreshToken = localStorage.getItem('refresh_token');
-      return { accessToken, refreshToken };
-    } catch {
-      return { accessToken: null, refreshToken: null };
-    }
-  }, []);
-
-  const storeTokens = useCallback((accessToken: string, refreshToken?: string) => {
-    try {
-      localStorage.setItem('access_token', accessToken);
-      if (refreshToken) {
-        localStorage.setItem('refresh_token', refreshToken);
-      }
-    } catch (error) {
-      console.warn('Failed to store auth tokens:', error);
-    }
-  }, []);
-
-  const clearTokens = useCallback(() => {
-    try {
-      localStorage.removeItem('access_token');
-      localStorage.removeItem('refresh_token');
-    } catch (error) {
-      console.warn('Failed to clear auth tokens:', error);
-    }
-  }, []);
-
   const updateAuthState = useCallback((authData: AuthSession | null) => {
     if (authData) {
       setUser(authData.user);
       setSession(authData.session);
-      storeTokens(authData.access_token, authData.refresh_token);
     } else {
       setUser(null);
       setSession(null);
-      clearTokens();
     }
-  }, [storeTokens, clearTokens]);
+  }, []);
 
   const checkSession = useCallback(async () => {
     setLoading(true);
     try {
-      const { accessToken, refreshToken } = getStoredTokens();
+      const { data: { session }, error } = await supabase.auth.getSession();
       
-      if (!accessToken) {
-        setLoading(false);
-        return;
-      }
-
-      // Try to get session with current token
-      const { data: sessionData, error: sessionError } = await apiService.getSession(accessToken);
-      
-      if (sessionError || !sessionData?.user) {
-        // Try to refresh token if available
-        if (refreshToken) {
-          const { data: refreshData, error: refreshError } = await apiService.refreshToken(refreshToken);
-          
-          if (refreshError || !refreshData) {
-            clearTokens();
-          } else {
-            updateAuthState(refreshData);
-          }
-        } else {
-          clearTokens();
-        }
-      } else {
-        // Session is valid
+      if (error) {
+        console.error('Session check failed:', error);
+        updateAuthState(null);
+      } else if (session) {
         updateAuthState({
-          user: sessionData.user,
-          session: sessionData.session,
-          access_token: accessToken
+          user: session.user,
+          session: session,
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
         });
+      } else {
+        updateAuthState(null);
       }
     } catch (error) {
       console.error('Session check failed:', error);
-      clearTokens();
+      updateAuthState(null);
     } finally {
       setLoading(false);
     }
-  }, [getStoredTokens, updateAuthState, clearTokens]); // Added missing ')' and dependency array
+  }, [updateAuthState]);
 
   const signIn = async (email: string, password: string) => {
     try {
-      const { data, error } = await apiService.signIn(email, password);
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
       
       if (error) {
-        return { data: null, error };
+        return { data: null, error: error.message };
       }
 
-      updateAuthState(data);
-      return { data, error: null };
+      if (data.session) {
+        updateAuthState({
+          user: data.user,
+          session: data.session,
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token
+        });
+      }
+
+      return { data: { user: data.user, session: data.session, access_token: data.session?.access_token || '' }, error: null };
     } catch (e: unknown) {
       const errorMessage = String(e instanceof Error ? e.message : e);
       return { data: null, error: errorMessage };
@@ -143,15 +105,57 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string) => {
     try {
-      const { data, error } = await apiService.signUp(email, password);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+      });
       
       if (error) {
-        return { data: null, error };
+        return { data: null, error: error.message };
       }
 
       // Only update auth state if user is immediately confirmed
-      if (data.user?.email_confirmed_at) {
-        updateAuthState(data);
+      if (data.session) {
+        updateAuthState({
+          user: data.user!,
+          session: data.session,
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token
+        });
+      }
+      
+      return { data: { user: data.user!, session: data.session, access_token: data.session?.access_token || '' }, error: null };
+    } catch (e: unknown) {
+      const errorMessage = String(e instanceof Error ? e.message : e);
+      return { data: null, error: errorMessage };
+    }
+  };
+
+  const signOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      
+      updateAuthState(null);
+      
+      if (error) {
+        return { data: null, error: error.message };
+      }
+      
+      return { data: null, error: null };
+    } catch (e: unknown) {
+      const errorMessage = String(e instanceof Error ? e.message : e);
+      // Still clear local state even if API call fails
+      updateAuthState(null);
+      return { data: null, error: errorMessage };
+    }
+  };
+
+  const resetPassword = async (email: string) => {
+    try {
+      const { data, error } = await supabase.auth.resetPasswordForEmail(email);
+      
+      if (error) {
+        return { data: null, error: error.message };
       }
       
       return { data, error: null };
@@ -161,54 +165,32 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signOut = async () => {
-    try {
-      const { accessToken } = getStoredTokens();
-      
-      if (accessToken) {
-        await apiService.signOut(accessToken);
-      }
-      
-      updateAuthState(null);
-      return { error: null };
-    } catch (e: unknown) {
-      const errorMessage = String(e instanceof Error ? e.message : e);
-      // Still clear local state even if API call fails
-      updateAuthState(null);
-      return { error: errorMessage };
-    }
-  };
-
-  const resetPassword = async (email: string) => {
-    try {
-      const { data, error } = await apiService.resetPassword(email);
-      return { data, error };
-    } catch (e: unknown) {
-      const errorMessage = String(e instanceof Error ? e.message : e);
-      return { data: null, error: errorMessage };
-    }
-  };
-
-  // Auto-refresh token before expiry
+  // Listen for auth state changes
   useEffect(() => {
-    const refreshInterval = setInterval(async () => {
-      const { refreshToken } = getStoredTokens();
-      
-      if (refreshToken && user) {
-        try {
-          const { data, error } = await apiService.refreshToken(refreshToken);
-          
-          if (!error && data) {
-            updateAuthState(data);
-          }
-        } catch (error) {
-          console.warn('Auto token refresh failed:', error);
-        }
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' && session) {
+        updateAuthState({
+          user: session.user,
+          session: session,
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        });
+      } else if (event === 'SIGNED_OUT') {
+        updateAuthState(null);
+      } else if (event === 'TOKEN_REFRESHED' && session) {
+        updateAuthState({
+          user: session.user,
+          session: session,
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        });
       }
-    }, 15 * 60 * 1000); // Refresh every 15 minutes
+    });
 
-    return () => clearInterval(refreshInterval);
-  }, [user, updateAuthState, getStoredTokens]); // Added updateAuthState and getStoredTokens
+    return () => subscription.unsubscribe();
+  }, [updateAuthState]);
 
   useEffect(() => {
     checkSession();

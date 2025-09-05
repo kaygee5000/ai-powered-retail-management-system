@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Brain, Eye, EyeOff, Mail, Lock, User, AlertCircle } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../contexts/useAuthHook';
 
 const AuthLayout: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);

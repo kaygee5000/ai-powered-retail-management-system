@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { apiService } from '../services/apiService';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../contexts/useAuthHook';
 
 interface Notification {
   id: string;
